@@ -1,0 +1,5 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource prefix="/">
+<file alias="cross.png">/home/pi/Documents/CameraThermique/cross.png</file>
+</qresource>
+</RCC>

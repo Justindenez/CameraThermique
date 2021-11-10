@@ -166,7 +166,6 @@ DIST          = /usr/lib/arm-linux-gnueabihf/qt5/mkspecs/features/spec_pre.prf \
 		MyLabel.h \
 		MyWidget.h \
 		Palettes.h \
-		scaler.h \
 		SPI.h \
 		Window.h cameraworker.cpp \
 		Lepton_I2C.cpp \
@@ -368,7 +367,7 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/arm-linux-gnueabihf/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents cameraworker.h Lepton_I2C.h LeptonThread.h menuWidget.h MyLabel.h MyWidget.h Palettes.h scaler.h SPI.h Window.h $(DISTDIR)/
+	$(COPY_FILE) --parents cameraworker.h Lepton_I2C.h LeptonThread.h menuWidget.h MyLabel.h MyWidget.h Palettes.h SPI.h Window.h $(DISTDIR)/
 	$(COPY_FILE) --parents cameraworker.cpp Lepton_I2C.cpp LeptonThread.cpp main.cpp menuWidget.cpp MyLabel.cpp MyWidget.cpp Palettes.cpp qrc_qmake_qmake_immediate.cpp SPI.cpp Window.cpp $(DISTDIR)/
 
 

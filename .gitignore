@@ -3,3 +3,4 @@ gen_objs/*
 Output/*
 .qmak.stash
 CameraThermique
+Makefile

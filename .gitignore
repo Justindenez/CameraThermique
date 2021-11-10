@@ -1,6 +1,6 @@
 gen_mocs/*
 gen_objs/*
 Output/*
-.qmak.stash
+.qmake.stash
 CameraThermique
 Makefile

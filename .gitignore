@@ -1,0 +1,5 @@
+gen_mocs/*
+gen_objs/*
+Output/*
+.qmak.stash
+CameraThermique

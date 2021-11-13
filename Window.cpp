@@ -2,10 +2,19 @@
 
 Window::Window(QWindow *parent) : QWindow(parent)
 {
-	window = new MyWidget();
-	myLabel = new MyLabel(window);
+	//Create some Global Object so they can be use evrywere in this class
+	
+	//window is the main window of this app, it's create were so it can be use in Main() and Capture()
+	window = new MyWidget();  
+	
+	//leptonLabel is the label to show the thermal image, it's create were so it can be use in Main(), video() and Capture()
+	leptonLabel = new MyLabel(window);
+	
+	//thread is the thread that run the code whith capture the thermal image (and other thermal information) and return it
 	thread = new LeptonThread();
-	NbrCap=100;
+	
+	//The number of frame for the video capture, it's create were so it can be use in video() and modified in Main()
+	nbrCap=100;
 }
 
 Window::~Window()
@@ -15,16 +24,18 @@ Window::~Window()
 QStringList dir; //path to the directory were we save outout
 
 
-
-void Window::vid(int a){
+//Take a screenshot of the thermal image and save it. If it's the last frame, make a video out of all the frame
+void Window::video(int remainingFrame){
+	
+	//name of the file ex : imgCam_100010.png
 	QString name;
 	name.append("imgCam_");
-	name.append(QString::number(100000+NbrCap-a));
+	name.append(QString::number(100000+nbrCap-remainingFrame));
 	name.append(".png");
 
-	//Take the screenshoot
+	//Take the screenshoot of the thermal image
 	QPixmap *originalPixmap = new QPixmap();
-	*originalPixmap = myLabel->grab(QRect(QPoint(0, 30), QSize(320, 240)));
+	*originalPixmap = leptonLabel->grab(QRect(QPoint(0, 30), QSize(320, 240)));
 	
 	
 	//Save the Capture
@@ -32,21 +43,27 @@ void Window::vid(int a){
 	file.open(QIODevice::WriteOnly);
 	originalPixmap->save(&file,"PNG");
 	
-	if(a==0){
+	//if it's the last frame, we make a video of the frame using ffmpeg and save it whith the date as name
+	if(remainingFrame==0){
 		QDateTime time = QDateTime::currentDateTime();
+		
+		//We create the ffmpeg commande line in com
 		QString com;
 		com.append("echo y | ffmpeg -framerate 10 -pattern_type glob -i '*.png' -c:v ffv1 Video_");
 		com.append(time.toString("yyyy_MM_dd_hh_mm_ss"));
 		com.append(".avi");
+		
 		QByteArray ba = com.toLocal8Bit();
 		const char *c_str2 = ba.data();
 		system(c_str2);
 		
+		//We delete all the frame
 		system("rm imgCam_*.png");
 
 	}
 }
 
+//Shutdown the pi
 void Window::Quit(){
 		system("shutdown -P now");
 	}
@@ -54,10 +71,13 @@ void Window::Quit(){
 //Print the temperature's gratient depending off the colormap
 void Window::grad(MyLabel* myGrad, int typeColormap){
 	
+	//Create the image
 	QImage grad;
 	grad = QImage(20,255, QImage::Format_RGB888);
+	
 	QRgb value;
 	
+	//We set individualy eatch pixel depending of the active colormap 
 	int i=0;
 	int j;
 	switch (typeColormap) {
@@ -94,9 +114,9 @@ void Window::grad(MyLabel* myGrad, int typeColormap){
 				i=i+3;
 			}
 			break;
-		}
-		myGrad->setImage(grad);
 	}
+	myGrad->setImage(grad);
+}
 	
 //Take a screenshot and save it
 void Window::Capture(){
@@ -104,6 +124,9 @@ void Window::Capture(){
 	//Get the time to put it in the file name
 	QDateTime time = QDateTime::currentDateTime();
 	
+	//Capture of both of camera
+	
+	//Create the name of the file
 	QString name;
 	name.append("Capture_");
 	name.append(time.toString("yyyy_MM_dd_hh_mm_ss"));
@@ -118,24 +141,39 @@ void Window::Capture(){
 	file.open(QIODevice::WriteOnly);
 	originalPixmap->save(&file,"PNG");
 	
+	//Capture of the thermal camera
+
+	//Create the name of the file
 	QString name2;
 	name2.append("Lepton_");
 	name2.append(time.toString("yyyy_MM_dd_hh_mm_ss"));
 	name2.append(".png");
+	
+	//Take the screenshoot
 	QPixmap *originalPixmap2 = new QPixmap();
-	*originalPixmap2 = myLabel->grab(QRect(QPoint(0, 0), QSize(320, 240)));
+	*originalPixmap2 = leptonLabel->grab(QRect(QPoint(0, 0), QSize(320, 240)));
+	
+	//Save the Capture
 	QFile file2(name2);
 	file2.open(QIODevice::WriteOnly);
 	originalPixmap2->save(&file2,"PNG");
 	
+	//Create a data file 
+	
+	//Create the name of the file
 	QString name3;
 	name3.append("Data_");
 	name3.append(time.toString("yyyy_MM_dd_hh_mm_ss"));
 	name3.append(".txt");
+	
 	QFile file3(name3);
 	file3.open(QIODevice::WriteOnly);	
 	QTextStream out(&file3);
+	
+	//Add the minimal an maximal
     out << "Minimal : " << thread->min <<"\nMaximal : "<< thread->max<<"\n";
+	
+	//Add all temperature
     int index, index2;
     for ( index=0; index<160;index++){
 		for ( index2=0; index2<120;index2++){
@@ -144,51 +182,22 @@ void Window::Capture(){
 		out << "\n";
 	}
 
-
-	//QAviWriter writer("testVid.avi", QSize(800,600),24,"MJPG");
-	/*
-	writer.open();
-	
-	writer.addFrame(*originalPixmap);
-	*originalPixmap = screen->grabWindow(0);
-	usleep(200);
-	
-	writer.addFrame(*originalPixmap);
-	*originalPixmap = screen->grabWindow(0);
-	usleep(200);
-	
-	writer.addFrame(*originalPixmap);
-	*originalPixmap = screen->grabWindow(0);
-	usleep(200);
-	
-	writer.addFrame(*originalPixmap);
-	*originalPixmap = screen->grabWindow(0);
-	usleep(200);
-	
-	writer.addFrame(*originalPixmap);
-	*originalPixmap = screen->grabWindow(0);
-	usleep(200);
-	
-	writer.addFrame(*originalPixmap);
-	*originalPixmap = screen->grabWindow(0);
-	usleep(200);
-	
-	writer.close();*/
-	
-	}
+}
 
 //Chose the output directory 
-void Window::Save(){
+void Window::SaveDirecrtory(){
 	
+	//Create a file dialog to chose the directory
 	QFileDialog dialog;
 	dialog.setFileMode(QFileDialog::Directory);
 	dialog.setFocusPolicy(Qt::NoFocus);
 
+	//If we chose a directory, we change the output directory
 	if (dialog.exec()){
 		dir = dialog.selectedFiles();
-		
+		QDir::setCurrent(dir[0].toLocal8Bit().constData());
 	}
-	QDir::setCurrent(dir[0].toLocal8Bit().constData());
+
 }
 
 
@@ -202,7 +211,7 @@ void Window::main(){
 	int rangeMax = -1; 
 	int loglevel = 0;
 	
-	// Initialize the thread and worker for the camera
+	//Initialize the thread and worker for the camera
     QThread *workerThread = new QThread;
     CameraWorker *worker = new CameraWorker;
     
@@ -210,8 +219,10 @@ void Window::main(){
     workerThread->start();
 
 	//Create the main window
-	//MyWidget *window = new MyWidget();
+	//MyWidget *window = new MyWidget();   -> move to a global declaration
 	window->setGeometry(0, 2, 800, 480);
+
+
 
 	//Create the camera label
 	MyLabel *cam = new MyLabel(window);
@@ -220,6 +231,8 @@ void Window::main(){
 
 	//Connect the label to the camera
 	connect(worker, SIGNAL(handleImage(QImage &)), cam, SLOT(setImage(QImage)));
+
+
 
 	//Add a menu bar
 	QMenuBar *menubar = new QMenuBar(window);
@@ -230,6 +243,7 @@ void Window::main(){
 	menubar->setNativeMenuBar(1);
 	menubar->setVisible(1);
 	
+	//Add the action of the menu bar
 	QAction *display = editmenu->addAction("Display");
 	QAction *output = editmenu->addAction("Output");
 	QAction *quit = quitmenu->addAction("Shutdown");
@@ -240,11 +254,10 @@ void Window::main(){
 	
 	//create a label for the lepton
 	QImage myImage;
-	//MyLabel *myLabel = new MyLabel(window);
-	myLabel->setGeometry(160, 120, 320, 240);
-	myLabel->setPixmap(QPixmap::fromImage(myImage));
-	myLabel->raise();
-	//myLabel->setGeometry(0,0,0,0);
+	//MyLabel *leptonLabel = new MyLabel(window);
+	leptonLabel->setGeometry(160, 120, 320, 240);
+	leptonLabel->setPixmap(QPixmap::fromImage(myImage));
+	leptonLabel->raise();
 	
 	//create a label for the maximum
 	MyLabel *myMax = new MyLabel(window);
@@ -261,14 +274,16 @@ void Window::main(){
 	myGrad->setGeometry(660,60, 20, 255);
 	this->grad(myGrad, typeColormap);
 	
-	//Create the picked temperature layout
+	//add the picked temperature
+	//Create the picked temperature widget
 	QWidget *temp2 = new QWidget(window);
 	temp2->setGeometry(640,352, 200, 75);
-	
+	//Create the picked temperature textzone
 	MyLabel *temperature = new MyLabel(window);
 	temperature->setGeometry(0,0, 0, 0);
 	temperature->setText("température______");
 	temperature->setAlignment(Qt::AlignHCenter);
+	//Create the picked temperature layout
 	QGroupBox *box3 = new QGroupBox("Picked temperature",temp2);
 	QBoxLayout *layout3 = new QBoxLayout(QBoxLayout::TopToBottom,temp2);
 	layout3->addWidget(temperature);
@@ -281,9 +296,10 @@ void Window::main(){
 	CaptureButton->setGeometry(690, 120, 100, 30);
 	QObject::connect(CaptureButton, SIGNAL(clicked()), this, SLOT(Capture()));
 	
-	QPushButton *Vid = new QPushButton("Video", window);
-	Vid->setGeometry(690, 170, 100, 30);
-	QObject::connect(Vid, &QPushButton::clicked, this, [=]{thread->video=1; thread->num=NbrCap;});
+	//Create the video capture button
+	QPushButton *videoLabel = new QPushButton("Video", window);
+	videoLabel->setGeometry(690, 170, 100, 30);
+	QObject::connect(videoLabel, &QPushButton::clicked, this, [=]{thread->video=1; thread->num=nbrCap;});
 
 
 	
@@ -292,9 +308,11 @@ void Window::main(){
 	editW->setGeometry(640, 2, 160, 480);
 	editW->setFocusPolicy(Qt::ClickFocus );
 	editW->setFocus(Qt::MouseFocusReason);
+	//We need to set the focus of all editW content to NoFocus so editW keep it and don't close
+	
+	
 	//create a thread to gather SPI data
 	//when the thread emits updateImage, the label should update its image accordingly
-	
 	thread->setLogLevel(loglevel);
 	thread->useColormap(typeColormap);
 	thread->useLepton(typeLepton);
@@ -304,7 +322,8 @@ void Window::main(){
 	if (0 <= rangeMin) thread->useRangeMinValue(rangeMin);
 	if (0 <= rangeMax) thread->useRangeMaxValue(rangeMax);
 	
-	QObject::connect(thread, SIGNAL(updateImage(QImage)), myLabel, SLOT(setImage(QImage)));
+	//Create the conection betwin the thread and the layout
+	QObject::connect(thread, SIGNAL(updateImage(QImage)), leptonLabel, SLOT(setImage(QImage)));
 	QObject::connect(thread, SIGNAL(updateTextMax(QString)), myMax, SLOT(setText2(QString)));
 	QObject::connect(thread, SIGNAL(updateTextMin(QString)), myMin, SLOT(setText2(QString)));
 	QObject::connect(thread, &LeptonThread::updateImageRaw, temperature, [=]{uint16_t data; data = thread->myImageRaw(window->Mouse_X,window->Mouse_Y);temperature->setText(QString::number(data));});
@@ -312,6 +331,7 @@ void Window::main(){
 
 	//Add a action to the display button in the menu bar
 	QObject::connect(display, SIGNAL(triggered()),editW ,SLOT(show()));
+	
 	
 	//Create the tree colormap buttons and layout
 	QPushButton *setIron = new QPushButton("ironblack", editW);
@@ -329,9 +349,9 @@ void Window::main(){
 	setBow->setFocusPolicy(Qt::NoFocus);
 	QObject::connect(setBow, &QPushButton::clicked, thread, [this, myGrad]{usleep(2000); thread->terminate(); thread->useColormap(1); usleep(2000); thread->start();this->grad(myGrad, 1);});
 	
+	//Create the colormap chosing menu
 	QWidget *colormap = new QWidget(editW);
 	colormap->setGeometry(30, 20, 150, 300);
-	
 	QGroupBox *box = new QGroupBox("Thermal Colormap",colormap);
 	QBoxLayout *layout = new QBoxLayout(QBoxLayout::TopToBottom,colormap);
 	layout->addWidget(setIron);
@@ -341,28 +361,30 @@ void Window::main(){
 	box->setLayout(layout);
 	box->setAlignment(Qt::AlignHCenter);
 
+	//Add the slider fot the alpha parameter of the lepton label
 	//Create the alpha layout
 	QWidget *slide = new QWidget(editW);
 	slide->setGeometry(30, 180, 150, 300);
 	slide->setFocusPolicy(Qt::NoFocus);
-
+	//Create the alpha slider
 	QSlider *alphaSlide = new QSlider(Qt::Horizontal, slide);
 	alphaSlide->setMinimum(0);
 	alphaSlide->setMaximum(255);
 	alphaSlide->setValue(255);
 	alphaSlide->setFocusPolicy(Qt::NoFocus);
-
-	QGroupBox *box2 = new QGroupBox("alpha",slide);
 	
+	QGroupBox *box2 = new QGroupBox("alpha",slide);
 	QBoxLayout *layout2 = new QBoxLayout(QBoxLayout::TopToBottom,slide);
 	layout2->addWidget(alphaSlide);
 	layout2->addStretch(0);
 	box2->setLayout(layout2);
 	box2->setAlignment(Qt::AlignHCenter);
 	
+	//Connect the slider to the thread so the image we get have the alpha we choose
 	QObject::connect(alphaSlide, SIGNAL(valueChanged(int)), thread, SLOT(setAlpha(int)));
 
-	//create a FFC button
+
+	//create the FFC button
 	QPushButton *FFC = new QPushButton("Perform FFC", editW);
 	FFC->setGeometry(30, 300, 100, 30);
 	QObject::connect(FFC, SIGNAL(clicked()), thread, SLOT(performFFC()));
@@ -375,12 +397,14 @@ void Window::main(){
 	
 	
 	
-	
+	//Create the output window to choose output parameters
 	QWidget *OutputWindow = new QWidget();
 	OutputWindow->setGeometry(0, 2, 800, 480);
 	OutputWindow->setFocusPolicy(Qt::ClickFocus );
 	OutputWindow->setFocus(Qt::MouseFocusReason);
 	
+	
+	//Create the selection of the output directory
 	QLabel *Chose = new QLabel("Output directory :", OutputWindow);
 	Chose->setGeometry(170,5, 150, 20);
 	Chose->setFocusPolicy(Qt::NoFocus);
@@ -398,7 +422,9 @@ void Window::main(){
 	location->setGeometry(0, 50, 300, 30);
 	location->setFocusPolicy(Qt::NoFocus);
 
-	QObject::connect(location, SIGNAL(clicked()), this, SLOT(Save()));
+	//Update the variable
+	QObject::connect(location, SIGNAL(clicked()), this, SLOT(SaveDirecrtory()));
+	//Update the text of the label
 	QObject::connect(location, &QPushButton::clicked,  UserDir, [UserDir, this]{UserDir->setText(dir[0].toLocal8Bit().constData());UserDir->adjustSize();});
 
 	QGroupBox *box4 = new QGroupBox("Change Output directory",dirWiget);
@@ -411,7 +437,7 @@ void Window::main(){
 	box4->setLayout(layout4);
 	box4->setAlignment(Qt::AlignHCenter);
 	box4->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
-
+	//Default directory
 	dir <<"/home/pi/Documents/CameraThermique/Output";
 	QDir::setCurrent(dir[0].toLocal8Bit().constData());
 	UserDir->setText(dir[0].toLocal8Bit().constData());
@@ -419,7 +445,7 @@ void Window::main(){
 	QObject::connect(output, SIGNAL(triggered()),OutputWindow ,SLOT(show()));
 	
 	
-	
+	//Add the video length choise
 	QWidget *FrameWiget = new QWidget(OutputWindow);
 	FrameWiget->setGeometry(300, 100, 800, 480);
 	FrameWiget->setFocusPolicy(Qt::NoFocus);
@@ -444,7 +470,7 @@ void Window::main(){
 	box5->setAlignment(Qt::AlignHCenter);
 	box5->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
 	
-	connect(frame, QOverload<int>::of(&QSpinBox::valueChanged),[=](int i){ NbrCap=i*10; });
+	connect(frame, QOverload<int>::of(&QSpinBox::valueChanged),[=](int i){ nbrCap=i*10; });
 
 
 
@@ -455,14 +481,16 @@ void Window::main(){
 	QPushButton *confirmOut = new QPushButton("OK", OutputWindow);
 	confirmOut->setGeometry(350, 400, 100, 30);
 	QObject::connect(confirmOut, SIGNAL(clicked()), OutputWindow, SLOT(close()));
-	QObject::connect(confirmOut, &QPushButton::clicked,  frame, [this, frame]{this->NbrCap=10*frame->value();});
+	QObject::connect(confirmOut, &QPushButton::clicked,  frame, [this, frame]{this->nbrCap=10*frame->value();});
 	
+	//Close all the window
 	QObject::connect(window, SIGNAL(close()), thread, SLOT(quit()));
 	QObject::connect(window, SIGNAL(close()), workerThread, SLOT(quit()));
 	QObject::connect(window, SIGNAL(close()), editW, SLOT(close()));
 	QObject::connect(window, SIGNAL(close()), this, SLOT(close()));
 	
-	QObject::connect(thread, SIGNAL(Capture(int)), this, SLOT(vid(int)));
+	//Connection for the video capture
+	QObject::connect(thread, SIGNAL(Capture(int)), this, SLOT(video(int)));
 
 	
 	window->show();

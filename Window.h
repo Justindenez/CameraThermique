@@ -56,6 +56,7 @@ class Window : public QWindow {
   public:
      explicit Window(QWindow *parent);
     ~Window();
+	
     MyWidget *window;
     MyLabel *myLabel;
     LeptonThread *thread;

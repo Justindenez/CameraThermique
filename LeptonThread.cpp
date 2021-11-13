@@ -18,20 +18,20 @@
 
 LeptonThread::LeptonThread() : QThread()
 {
-	//
+	
 	loglevel = 0;
 
-	//
+	
 	typeColormap = 3; // 1:colormap_rainbow  /  2:colormap_grayscale  /  3:colormap_ironblack(default)
 	selectedColormap = colormap_ironblack;
 	selectedColormapSize = get_size_colormap_ironblack();
 
-	//
+	
 	typeLepton = 3; // 2:Lepton 2.x  / 3:Lepton 3.x
 	myImageWidth = 160;
 	myImageHeight = 120;
 
-	//
+	
 	spiSpeed = 30 * 1000 * 1000; // SPI bus speed 30MHz
 
 	// min/max value for scaling
@@ -55,6 +55,7 @@ void LeptonThread::setLogLevel(uint16_t newLoglevel)
 
 void LeptonThread::useColormap(int newTypeColormap)
 {
+	//Change the colormap
 	switch (newTypeColormap) {
 	case 1:
 		typeColormap = 1;
@@ -121,11 +122,9 @@ void LeptonThread::run()
 {
 	//create the initial image
 	myImage = QImage(myImageWidth, myImageHeight, QImage::Format_RGBA8888);
-	
-	//myImageRaw = QImage(myImageWidth, myImageHeight, QImage::Format_Grayscale8);
-	
-	max = "test";
-	min = "test";
+		
+	max = "max";
+	min = "min";
 
 	const int *colormap = selectedColormap;
 	const int colormapSize = selectedColormapSize;

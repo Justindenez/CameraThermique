@@ -31,7 +31,6 @@ public:
   void useRangeMinValue(uint16_t);
   void useRangeMaxValue(uint16_t);
   void run();
-  //QImage myImageRaw2;
   QGenericMatrix<160,160,uint16_t> myImageRaw;
   QString max;
   QString min;
